@@ -1,0 +1,19 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=3409
+
+Lots of beginners(like me) do not like to use vim's h,j,k,l key to move concur, so I made this game, hopefully can help beginners get used to h,j,k and l.
+
+This is a maze exploring game.
+A 15*15 maze is randomly generated, and user('@') need to go to target position('X').
+Only h,j,k,l are allowed for controlling.
+
+Maximize the window before starting the game to get better view.
+
+Type :HJKL to start a new game.
+
+Any bug or suggestion: biran0079 at gmail.com
+
+
+Future plan:
+1. Better random number generator is needed. Current version sometimes leads to infinite loop when generating random maze.
+2. Need more challenging maze. Better maze construction algorithm is needed.
+3. More fancy features...
