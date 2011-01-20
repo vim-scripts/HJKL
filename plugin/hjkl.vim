@@ -156,8 +156,7 @@ function! s:MainLoop()
 		redraw
 		if s:CheckWin()
 			echo "Congratulations!"
-			echo "type any key to continue"
-			call getchar()
+			echo "You Win!"
 			break
 		endif
 		let c=getchar()
