@@ -166,11 +166,20 @@ function! s:MainLoop()
 	endwhile
 endfunction
 
-function! s:HJKL()
+function! s:HJKL(...)
 	" 
-	"size of maze
+	"determin size of maze
+	"
 	let s:R=15
 	let s:C=20
+	if a:0==2
+		if a:1 >= 5 && a:1 <= 20
+			let s:R=a:1
+		endif
+		if a:2 >= 5 && a:2<= 20
+			let s:C=a:2
+		endif
+	endif
 
 	"build random maze
 	call s:BuildMaze(s:R,s:C)
@@ -185,4 +194,4 @@ function! s:HJKL()
 
 endfunction
 
-command! HJKL call s:HJKL()
+command! -nargs=* HJKL call s:HJKL(<f-args>)
