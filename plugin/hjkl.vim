@@ -50,6 +50,7 @@ function! s:PrintMaze()
 	for i in range(len(s:maze))
 		"line index starts from 1
 		let line=join(s:maze[i],'')
+		let line=substitute(line,' ','`','g')	"for highlight matching. ' ' appears in normal text too often
 		call setline(i+1,line)
 	endfor
 	let s:maze[s:you[0]][s:you[1]]=' '
@@ -167,16 +168,14 @@ function! s:MainLoop()
 endfunction
 
 function! s:HJKL(...)
-	" 
 	"determin size of maze
-	"
 	let s:R=15
 	let s:C=20
 	if a:0==2
 		if a:1 >= 5 && a:1 <= 20
 			let s:R=a:1
 		endif
-		if a:2 >= 5 && a:2<= 20
+		if a:2 >= 5 && a:2<= 80
 			let s:C=a:2
 		endif
 	endif
@@ -188,6 +187,17 @@ function! s:HJKL(...)
 
 	"create new window for game
 	new
+
+	syntax match Wall "+"
+	syntax match Wall "-"
+	syntax match Wall "|"
+	syntax match Empty "`"
+	syntax match Obj "@"
+	syntax match Obj "X"
+
+	hi Wall ctermfg=Black ctermbg=Black guibg=Black guifg=Black
+	hi Empty ctermfg=White ctermbg=White guibg=White guifg=White
+	hi Obj ctermfg=Black ctermbg=White guibg=White guifg=Black
 
 	"main loop
 	call s:MainLoop()
