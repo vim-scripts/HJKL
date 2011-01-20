@@ -3,7 +3,11 @@
 "
 let s:w=localtime()
 let s:z=s:w*22695477
+"maze represented in two-dim array of char
 let s:maze=[]
+"size of maze
+let s:R=15
+let s:C=15
 
 function! s:Rand()
 	let s:z=36969 * (s:z % 65536) + s:z / 65536
@@ -17,17 +21,36 @@ function! s:RandInt(a,b)
 	return s:Rand()%(a:b-a:a)+a:a
 endfunction
 
-function! s:BuildFullGrid(R,C)
-	let s:maze=[]
-	let R=a:R
-	let C=a:C
-	for i in range(0,2*R)
+"return random double in [0,1)
+function! s:RandDouble()
+	let magic=89513
+	return s:Rand()%magic*1.0/magic
+endfunction
+
+function! s:Build2DArray(n,m,v)
+	let res=[]
+	for i in range(a:n)
 		let row=[]
-		for j in range(0,2*C)
-			call add(row,' ')
+		for j in range(a:m)
+			call add(row,a:v)
 		endfor
-		call add(s:maze,row)
+		call add(res,row)
 	endfor
+	return res
+endfunction
+
+function! s:RemoveWallWithProbability(i,j,p)
+	if s:RandDouble() < a:p
+		let s:maze[a:i][a:j]=' '
+		return 1
+	endif
+	return 0
+endfunction
+
+function! s:BuildFullGrid()
+	let R=s:R
+	let C=s:C
+	let s:maze=s:Build2DArray(2*R+1,2*C+1,' ')
 	for i in range(0,R)
 		for j in range(0,C)
 			let s:maze[2*i][2*j]='+'
@@ -46,6 +69,7 @@ function! s:BuildFullGrid(R,C)
 endfunction
 
 function! s:PrintMaze()
+	let s:maze[s:target[0]][s:target[1]]='X'
 	let s:maze[s:you[0]][s:you[1]]='@'
 	for i in range(len(s:maze))
 		"line index starts from 1
@@ -54,6 +78,7 @@ function! s:PrintMaze()
 		call setline(i+1,line)
 	endfor
 	let s:maze[s:you[0]][s:you[1]]=' '
+	let s:maze[s:target[0]][s:target[1]]=' '
 	call setline(len(s:maze)+1,"")
 	call setline(len(s:maze)+2,"Use h,j,k,l to bring you('@') to the target('X')")
 	call setline(len(s:maze)+3,"type q to quit the game")
@@ -76,10 +101,34 @@ function! s:Merge(a,b)
 	let s:p[s:Root(a)]=s:Root(b)
 endfunction
 
-function! s:RandomlyRemoveWalls(R,C)
+function! s:Valid(i,j)
+	return a:i>=0 && a:i<=2*s:R && a:j>=0 && a:j<=2*s:C
+endfunction
+
+function! s:GetProbability(i,j)
+	let i=a:i
+	let j=a:j
+	let d=[[0,-2],[-1,-1],[1,-1],[0,2],[-1,1],[1,1]]
+	let ct=0
+	let filled=0
+	for p in d
+		let ti=i+p[i%2]
+		let tj=j+p[j%2]
+		if s:Valid(ti,tj)
+			let ct+=1
+			if s:maze[ti][tj]!=' '
+				let filled+=1
+			endif
+		endif
+	endfor
+	let r=1.0*filled/ct
+	return pow(r,2)
+endfunction
+
+function! s:RandomlyRemoveWalls()
 	let s:p=[]
-	let R=a:R
-	let C=a:C
+	let R=s:R
+	let C=s:C
 	let d=[[-1,0],[1,0],[0,-1],[0,1]]
 	for i in range(R*C)
 		call add(s:p,i)
@@ -95,25 +144,62 @@ function! s:RandomlyRemoveWalls(R,C)
 		if i==0 || i==2*R || j==0 || j==2*C || s:maze[i][j]==' '
 			continue
 		endif
-		let s:maze[i][j]=' '
-		if idx==0
-			call s:Merge(x*C+y,(x-1)*C+y)
-		elseif idx==1
-			call s:Merge(x*C+y,(x+1)*C+y)
-		elseif idx==2
-			call s:Merge(x*C+y,x*C+y-1)
-		else
-			call s:Merge(x*C+y,x*C+y+1)
+		let p=s:GetProbability(i,j)
+		if s:RemoveWallWithProbability(i,j,p)
+			if idx==0
+				call s:Merge(x*C+y,(x-1)*C+y)
+			elseif idx==1
+				call s:Merge(x*C+y,(x+1)*C+y)
+			elseif idx==2
+				call s:Merge(x*C+y,x*C+y-1)
+			else
+				call s:Merge(x*C+y,x*C+y+1)
+			endif
 		endif
 	endwhile
 endfunction
 
-function! s:BuildMaze(R,C)
-	let R=a:R
-	let C=a:C
-	call s:BuildFullGrid(R,C)
-	call s:RandomlyRemoveWalls(R,C)
-	let s:maze[2*R-1][2*C-1]='X'
+
+function! s:FindFarthestPoint()
+	"starting point is s:you's logical coordinate
+	let si=s:you[0]/2
+	let sj=s:you[1]/2
+	let Q=[[si,sj]]
+	let dis=s:Build2DArray(s:R,s:C,-1)
+	let dis[si][sj]=0
+	let maxDis=0
+	let d=[[-1,0],[1,0],[0,-1],[0,1]]
+	while len(Q)!=0
+		let p=get(Q,0)
+		call remove(Q,0)
+		let i=p[0]
+		let j=p[1]
+		for idx in range(4)
+			let ti=i+d[idx][0]
+			let tj=j+d[idx][1]
+			if s:maze[i+1+ti][j+1+tj]==' ' && dis[ti][tj]==-1
+				call add(Q,[ti,tj])
+				let dis[ti][tj]=dis[i][j]+1
+				let maxDis=max([maxDis,dis[ti][tj]])
+			endif
+		endfor
+	endwhile
+	for i in range(s:R)
+		for j in range(s:C)
+			if dis[i][j]==maxDis
+				return [i*2+1,j*2+1]
+			endif
+		endfor
+	endfor
+endfunction
+
+function! s:BuildMaze()
+	let R=s:R
+	let C=s:C
+	call s:BuildFullGrid()
+	call s:RandomlyRemoveWalls()
+	let s:you=[1,1]
+	let s:target=s:FindFarthestPoint()
 endfunction
 
 function! s:HandleKeyInput(c)
@@ -133,7 +219,7 @@ function! s:HandleKeyInput(c)
 	elseif c=='l'
 		let j+=1
 	endif
-	if s:maze[i][j]==' ' || s:maze[i][j]=='X'
+	if s:maze[i][j]==' '
 		let s:you[0]=i
 		let s:you[1]=j
 	endif
@@ -141,10 +227,8 @@ function! s:HandleKeyInput(c)
 endfunction
 
 
-
-
 function! s:CheckWin()
-	return s:you[0]==2*s:R-1 && s:you[1]==2*s:C-1
+	return s:you[0]==s:target[0] && s:you[1]==s:target[1]
 endfunction
 
 function! s:MainLoop()
@@ -157,7 +241,7 @@ function! s:MainLoop()
 		redraw
 		if s:CheckWin()
 			echo "Congratulations!"
-			echo "You Win!"
+			echo "type any key to continue"
 			break
 		endif
 		let c=getchar()
@@ -168,26 +252,22 @@ function! s:MainLoop()
 endfunction
 
 function! s:HJKL(...)
-	"determin size of maze
-	let s:R=15
-	let s:C=20
+
 	if a:0==2
-		if a:1 >= 5 && a:1 <= 20
+		if a:1 >= 5 && a:1 <= 30
 			let s:R=a:1
 		endif
-		if a:2 >= 5 && a:2<= 80
+		if a:2 >= 5 && a:2<= 40
 			let s:C=a:2
 		endif
 	endif
-
 	"build random maze
-	call s:BuildMaze(s:R,s:C)
+	call s:BuildMaze()
 	"create new window
-	let s:you=[1,1]
-
+	
 	"create new window for game
 	new
-
+	"setup syntax highlight
 	syntax match Wall "+"
 	syntax match Wall "-"
 	syntax match Wall "|"
@@ -198,7 +278,6 @@ function! s:HJKL(...)
 	hi Wall ctermfg=Black ctermbg=Black guibg=Black guifg=Black
 	hi Empty ctermfg=White ctermbg=White guibg=White guifg=White
 	hi Obj ctermfg=Black ctermbg=White guibg=White guifg=Black
-
 	"main loop
 	call s:MainLoop()
 
