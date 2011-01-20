@@ -144,17 +144,24 @@ function! s:RandomlyRemoveWalls()
 		if i==0 || i==2*R || j==0 || j==2*C || s:maze[i][j]==' '
 			continue
 		endif
+
+		if idx==0
+			let con=[x*C+y,(x-1)*C+y]
+		elseif idx==1
+			let con=[x*C+y,(x+1)*C+y]
+		elseif idx==2
+			let con=[x*C+y,x*C+y-1]
+		else
+			let con=[x*C+y,x*C+y+1]
+		endif
+
+		if s:Root(con[0])==s:Root(con[1])
+			continue
+		endif
+
 		let p=s:GetProbability(i,j)
 		if s:RemoveWallWithProbability(i,j,p)
-			if idx==0
-				call s:Merge(x*C+y,(x-1)*C+y)
-			elseif idx==1
-				call s:Merge(x*C+y,(x+1)*C+y)
-			elseif idx==2
-				call s:Merge(x*C+y,x*C+y-1)
-			else
-				call s:Merge(x*C+y,x*C+y+1)
-			endif
+			call s:Merge(con[0],con[1])
 		endif
 	endwhile
 endfunction
