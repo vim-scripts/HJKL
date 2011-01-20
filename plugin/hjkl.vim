@@ -85,7 +85,7 @@ function! s:RandomlyRemoveWalls(R,C)
 	endfor
 	while s:Root(0)!=s:Root(R*C-1)
 		let x=s:RandInt(0,R)
-		let y=s:RandInt(0,R)
+		let y=s:RandInt(0,C)
 		let i=1+2*x
 		let j=1+2*y
 		let idx=s:RandInt(0,4)
@@ -96,13 +96,13 @@ function! s:RandomlyRemoveWalls(R,C)
 		endif
 		let s:maze[i][j]=' '
 		if idx==0
-			call s:Merge(x*R+y,(x-1)*R+y)
+			call s:Merge(x*C+y,(x-1)*C+y)
 		elseif idx==1
-			call s:Merge(x*R+y,(x+1)*R+y)
+			call s:Merge(x*C+y,(x+1)*C+y)
 		elseif idx==2
-			call s:Merge(x*R+y,x*R+y-1)
+			call s:Merge(x*C+y,x*C+y-1)
 		else
-			call s:Merge(x*R+y,x*R+y+1)
+			call s:Merge(x*C+y,x*C+y+1)
 		endif
 	endwhile
 endfunction
@@ -170,7 +170,7 @@ function! s:HJKL()
 	" 
 	"size of maze
 	let s:R=15
-	let s:C=15
+	let s:C=20
 
 	"build random maze
 	call s:BuildMaze(s:R,s:C)
