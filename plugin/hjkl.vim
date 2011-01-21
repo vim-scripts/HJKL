@@ -257,7 +257,7 @@ function! s:HandleKonamiCode(c)
 
 	if s:konami==10
 		let s:konami=0
-		let s:konamiMode=1
+		let s:konamiMode+=1
 		let s:targetHistory=s:Build2DArray(2*s:R+1,2*s:C+1,0)
 		let s:targetHistory[s:target[0]][s:target[1]]=1
 		echo 'hallelujah !'
@@ -313,9 +313,9 @@ function! s:HandleKeyInput(c)
 		let s:you[1]=j
 	endif
 
-	if s:konamiMode==1
+	for i in range(s:konamiMode)
 		call s:RandomMoveTarget()
-	endif
+	endfor
 
 	return 0
 endfunction
@@ -355,6 +355,8 @@ function! s:HJKL(...)
 			let s:C=a:2
 		endif
 	endif
+	"initialization
+	let s:konamiMode=0
 	"build random maze
 	call s:BuildMaze()
 	"create new window
