@@ -129,32 +129,47 @@ function! s:RandomlyRemoveWalls()
 	let s:p=[]
 	let R=s:R
 	let C=s:C
+	"0: up, 1:down, 2:left, 3:right
 	let d=[[-1,0],[1,0],[0,-1],[0,1]]
 	for i in range(R*C)
 		call add(s:p,i)
 	endfor
-	while s:Root(0)!=s:Root(R*C-1)
-		let x=s:RandInt(0,R)
-		let y=s:RandInt(0,C)
+	"candidate list of walls to be removed
+	let cand=[]
+	"add all vertical walls into candidate list
+	for i in range(R)
+		for j in range(C-1)
+			call add(cand,[i,j,3])
+		endfor
+	endfor
+	"add all horizontal walls into candidate list
+	for i in range(R-1)
+		for j in range(C)
+			call add(cand,[i,j,1])
+		endfor
+	endfor
+	while len(cand) > 0
+		let randIdx=s:RandInt(0,len(cand))
+		let x=cand[randIdx][0]
+		let y=cand[randIdx][1]
+		let idx=cand[randIdx][2]
+		call remove(cand,randIdx)
+		
 		let i=1+2*x
 		let j=1+2*y
-		let idx=s:RandInt(0,4)
 		let i+=d[idx][0]
 		let j+=d[idx][1]
-		if i==0 || i==2*R || j==0 || j==2*C || s:maze[i][j]==' '
-			continue
-		endif
 
-		if idx==0
-			let con=[x*C+y,(x-1)*C+y]
-		elseif idx==1
+		"
+		"only need to check two case now
+		"
+		if idx==1
 			let con=[x*C+y,(x+1)*C+y]
-		elseif idx==2
-			let con=[x*C+y,x*C+y-1]
 		else
 			let con=[x*C+y,x*C+y+1]
 		endif
 
+		"this check still needed
 		if s:Root(con[0])==s:Root(con[1])
 			continue
 		endif
@@ -162,6 +177,10 @@ function! s:RandomlyRemoveWalls()
 		let p=s:GetProbability(i,j)
 		if s:RemoveWallWithProbability(i,j,p)
 			call s:Merge(con[0],con[1])
+		else
+			" you are not chosen onlg because you are not lucky enough
+			" better luck next time
+			call add(cand,[x,y,idx])
 		endif
 	endwhile
 endfunction
@@ -264,7 +283,7 @@ function! s:HJKL(...)
 		if a:1 >= 5 && a:1 <= 30
 			let s:R=a:1
 		endif
-		if a:2 >= 5 && a:2<= 40
+		if a:2 >= 5 && a:2<= 60
 			let s:C=a:2
 		endif
 	endif
@@ -284,7 +303,7 @@ function! s:HJKL(...)
 
 	hi Wall ctermfg=Black ctermbg=Black guibg=Black guifg=Black
 	hi Empty ctermfg=White ctermbg=White guibg=White guifg=White
-	hi Obj ctermfg=Black ctermbg=White guibg=White guifg=Black
+	hi Obj ctermfg=DarkRed ctermbg=White guibg=White guifg=DarkRed
 	"main loop
 	call s:MainLoop()
 
