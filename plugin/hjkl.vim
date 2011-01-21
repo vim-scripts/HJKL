@@ -228,8 +228,71 @@ function! s:BuildMaze()
 	let s:target=s:FindFarthestPoint()
 endfunction
 
+let s:konami=0
+let s:konamiMode=0
+
+
+function! s:HandleKonamiCode(c)
+	let c=a:c
+	let correct=0
+	if (s:konami==0 || s:konami==1)
+		let correct = (c=='k')
+	elseif (s:konami==2 || s:konami==3)
+		let correct = (c=='j')
+	elseif (s:konami==4 || s:konami==6)
+		let correct = (c=='h')
+	elseif (s:konami==5 || s:konami==7)
+		let correct = (c=='l')
+	elseif s:konami==8
+		let correct = (c=='b')
+	elseif s:konami==9
+		let correct = (c=='a')
+	endif
+	
+	if correct
+		let s:konami+=1
+	else
+		let s:konami=0
+	endif
+
+	if s:konami==10
+		let s:konami=0
+		let s:konamiMode=1
+		let s:targetHistory=s:Build2DArray(2*s:R+1,2*s:C+1,0)
+		let s:targetHistory[s:target[0]][s:target[1]]=1
+		echo 'hallelujah !'
+	endif
+endfunction
+
+function! s:RandomMoveTarget()
+	"OK..it's not really random
+	let d=[[-1,0],[1,0],[0,-1],[0,1]]
+	let cand=[]
+	for p in d
+		let i=s:target[0]+p[0]
+		let j=s:target[1]+p[1]
+		if s:Valid(i,j) && s:maze[i][j]==' '
+			call add(cand,[i,j])
+		endif
+	endfor
+	"choose the location least walked on
+	let minNum=10000
+	for p in cand
+		let i=p[0]
+		let j=p[1]
+		if minNum > s:targetHistory[i][j]
+			let minNum = s:targetHistory[i][j]
+			let s:target = p
+		endif
+	endfor
+	let s:targetHistory[s:target[0]][s:target[1]]+=1
+endfunction
+
 function! s:HandleKeyInput(c)
 	let c=nr2char(a:c)
+	"for fun
+	call s:HandleKonamiCode(c)
+
 	if c=='q'
 		q!
 		return 1
@@ -249,6 +312,11 @@ function! s:HandleKeyInput(c)
 		let s:you[0]=i
 		let s:you[1]=j
 	endif
+
+	if s:konamiMode==1
+		call s:RandomMoveTarget()
+	endif
+
 	return 0
 endfunction
 
