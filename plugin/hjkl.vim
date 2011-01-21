@@ -1,13 +1,9 @@
 " Maximize window before starting new game to get better view.
 " type :HJKL to start new game
 "
-let s:w=localtime()
+"seed for random number generator
+let s:w=localtime()	
 let s:z=s:w*22695477
-"maze represented in two-dim array of char
-let s:maze=[]
-"size of maze
-let s:R=15
-let s:C=15
 
 function! s:Rand()
 	let s:z=36969 * (s:z % 65536) + s:z / 65536
@@ -327,9 +323,6 @@ endfunction
 
 function! s:MainLoop()
 	while 1
-		"ensure enough size. Resize each iteration because user may
-		"resize the window
-		resize 100
 		"print maze in new window
 		call s:PrintMaze()
 		redraw
@@ -345,35 +338,77 @@ function! s:MainLoop()
 	endwhile
 endfunction
 
+function! s:Error(msg)
+	echohl ErrorMsg
+	echo a:msg
+	echohl None
+endfunction
+	
+function! s:MaxAllowedHeight()
+	return (winheight(0)-4)/2
+endfunction
+
+function! s:MaxAllowedWidth()
+	return (winwidth(0)-10)/2
+endfunction
+
+function! s:SuggestMazeSize(R,C)
+	let R=a:R
+	let C=a:C
+	if R >= 5 && R*2+1 <= winheight(0)-3
+		let s:R = R
+	elseif R < 5
+		let s:R=5
+	else
+		let s:R = s:MaxAllowedHeight()
+	endif
+	if C >= 5 && C*2+1 <= winwidth(0)-9
+		let s:C = C
+	elseif C < 5
+		let s:C=5
+	else
+		let s:C = s:MaxAllowedWidth()
+	endif
+endfunction
+
 function! s:HJKL(...)
 
-	if a:0==2
-		if a:1 >= 5 && a:1 <= 30
-			let s:R=a:1
-		endif
-		if a:2 >= 5 && a:2<= 60
-			let s:C=a:2
-		endif
+	"create new window for game
+	new
+	resize 100
+	
+	if winheight(0) < 15 || winwidth(0) < 30
+		q!
+		call s:Error("Need larger window size! Don't be so mean!")
+		return
 	endif
-	"initialization
+	if a:0==2
+		"3 horizontal lines reserved for printing
+		"messages
+		call s:SuggestMazeSize(a:1,a:2)
+	else
+		"default size of maze
+		call s:SuggestMazeSize(15,20)
+	endif
 	let s:konamiMode=0
+	"initialization done
+	
 	"build random maze
 	call s:BuildMaze()
 	"create new window
 	
-	"create new window for game
-	new
 	"setup syntax highlight
 	syntax match Wall "+"
 	syntax match Wall "-"
 	syntax match Wall "|"
 	syntax match Empty "`"
-	syntax match Obj "@"
-	syntax match Obj "X"
+	syntax match Target "X"
+	syntax match You "@"
 
 	hi Wall ctermfg=Black ctermbg=Black guibg=Black guifg=Black
 	hi Empty ctermfg=White ctermbg=White guibg=White guifg=White
-	hi Obj ctermfg=DarkRed ctermbg=White guibg=White guifg=DarkRed
+	hi Target ctermfg=DarkRed ctermbg=White guibg=White guifg=DarkRed term=bold cterm=bold gui=bold
+	hi You ctermfg=DarkGreen ctermbg=White guibg=White guifg=DarkGreen term=bold cterm=bold gui=bold
 	"main loop
 	call s:MainLoop()
 
