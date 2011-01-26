@@ -1,9 +1,19 @@
+
+" Use h,j,k,l to bring you('@') to the target('X')
+" type q to quit the game
 " Maximize window before starting new game to get better view.
 " type :HJKL to start new game
+" type q to quit game
+" type konami code(kkjjhlhlba) several times when you want more challenge
 "
-"seed for random number generator
+" Maintainer:	Bi Ran<biran0079@gmail.com>
+"
+"
+" seed for random number generator
 let s:w=localtime()	
 let s:z=s:w*22695477
+"default difficulty
+let s:difficulty=2
 
 function! s:Rand()
 	let s:z=36969 * (s:z % 65536) + s:z / 65536
@@ -118,10 +128,20 @@ function! s:GetProbability(i,j)
 		endif
 	endfor
 	let r=1.0*filled/ct
-	return pow(r,2)
+	return pow(r,s:difficulty)
+endfunction
+
+function! s:GetProgressBar(total,missing)
+	let bar="Constructing Maze: |"
+	let n=float2nr(1.0*a:missing/a:total*20)
+	for i in range(n)
+		let bar.="=|"
+	endfor
+	return bar
 endfunction
 
 function! s:RandomlyRemoveWalls()
+	"build map spend most time here
 	let s:p=[]
 	let R=s:R
 	let C=s:C
@@ -144,6 +164,8 @@ function! s:RandomlyRemoveWalls()
 			call add(cand,[i,j,1])
 		endfor
 	endfor
+	let total=len(cand)
+	let missing=0
 	while len(cand) > 0
 		let randIdx=s:RandInt(0,len(cand))
 		let x=cand[randIdx][0]
@@ -172,13 +194,19 @@ function! s:RandomlyRemoveWalls()
 
 		let p=s:GetProbability(i,j)
 		if s:RemoveWallWithProbability(i,j,p)
+			" wall removed!!
+			redraw
+			echo s:GetProgressBar(total,missing)
 			call s:Merge(con[0],con[1])
+			let missing+=1
 		else
 			" you are not chosen onlg because you are not lucky enough
 			" better luck next time
 			call add(cand,[x,y,idx])
 		endif
 	endwhile
+	redraw
+	echo "Done"
 endfunction
 
 
@@ -288,11 +316,12 @@ function! s:HandleKeyInput(c)
 	let c=nr2char(a:c)
 	"for fun
 	call s:HandleKonamiCode(c)
-
+	"handle difficulty control
 	if c=='q'
 		q!
 		return 1
 	endif
+	"handle movement
 	let i=s:you[0]
 	let j=s:you[1]
 	if c=='h'
@@ -328,7 +357,8 @@ function! s:MainLoop()
 		redraw
 		if s:CheckWin()
 			echo "Congratulations!"
-			echo "type any key to continue"
+			echo "You got it!"
+			q!
 			break
 		endif
 		let c=getchar()
@@ -344,6 +374,7 @@ function! s:Error(msg)
 	echohl None
 endfunction
 	
+"maximal possible size for current window 
 function! s:MaxAllowedHeight()
 	return (winheight(0)-4)/2
 endfunction
@@ -353,6 +384,11 @@ function! s:MaxAllowedWidth()
 endfunction
 
 function! s:SuggestMazeSize(R,C)
+	" Give game size hint.
+	" May not always do as the suggested:
+	" Too small size hint will result in 5*5 maze(minimal size).
+	" Too large size hint will result in maximal possible maze for current
+	" window.
 	let R=a:R
 	let C=a:C
 	if R >= 5 && R*2+1 <= winheight(0)-3
@@ -377,10 +413,11 @@ function! s:HJKL(...)
 	new
 	resize 100
 	
+	"check whether window size is large enough to hold minimal game
 	if winheight(0) < 15 || winwidth(0) < 30
 		q!
 		call s:Error("Need larger window size! Don't be so mean!")
-		return
+		return 
 	endif
 	if a:0==2
 		"3 horizontal lines reserved for printing
