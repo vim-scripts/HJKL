@@ -81,6 +81,9 @@ function! s:PrintMaze()
 		"line index starts from 1
 		let line=join(s:maze[i],'')
 		let line=substitute(line,' ','`','g')	"for highlight matching. ' ' appears in normal text too often
+		let line=substitute(line,'.','&&','g')
+ 		let line=substitute(line,'XX','><','g')
+		
 		call setline(i+1,line)
 	endfor
 	let s:maze[s:you[0]][s:you[1]]=' '
@@ -380,7 +383,7 @@ function! s:MaxAllowedHeight()
 endfunction
 
 function! s:MaxAllowedWidth()
-	return (winwidth(0)-10)/2
+	return (winwidth(0)-10)/4
 endfunction
 
 function! s:SuggestMazeSize(R,C)
@@ -391,19 +394,20 @@ function! s:SuggestMazeSize(R,C)
 	" window.
 	let R=a:R
 	let C=a:C
-	if R >= 5 && R*2+1 <= winheight(0)-3
+	let size=[s:MaxAllowedHeight(),s:MaxAllowedWidth()]
+	if R >= 5 && R <= size[0]
 		let s:R = R
 	elseif R < 5
 		let s:R=5
 	else
-		let s:R = s:MaxAllowedHeight()
+		let s:R = size[0]
 	endif
-	if C >= 5 && C*2+1 <= winwidth(0)-9
+	if C >= 5 && C <= size[1]
 		let s:C = C
 	elseif C < 5
 		let s:C=5
 	else
-		let s:C = s:MaxAllowedWidth()
+		let s:C = size[1]
 	endif
 endfunction
 
@@ -439,7 +443,7 @@ function! s:HJKL(...)
 	syntax match Wall "-"
 	syntax match Wall "|"
 	syntax match Empty "`"
-	syntax match Target "X"
+	syntax match Target "><"
 	syntax match You "@"
 
 	hi Wall ctermfg=Black ctermbg=Black guibg=Black guifg=Black
