@@ -114,10 +114,11 @@ function! s:Valid(i,j)
 	return a:i>=0 && a:i<=2*s:R && a:j>=0 && a:j<=2*s:C
 endfunction
 
+
 function! s:GetProbability(i,j)
 	let i=a:i
 	let j=a:j
-	let d=[[0,-2],[-1,-1],[1,-1],[0,2],[-1,1],[1,1]]
+	let d=[[-1,-1],[0,-2],[1,-1],[1,1],[0,2],[-1,1]]
 	let ct=0
 	let filled=0
 	for p in d
@@ -412,15 +413,17 @@ function! s:SuggestMazeSize(R,C)
 endfunction
 
 function! s:HJKL(...)
-
+	if bufname("%") != ''
 	"create new window for game
-	new
-	resize 100
+		new
+		resize 100
+	endif
 	
 	"check whether window size is large enough to hold minimal game
 	if winheight(0) < 15 || winwidth(0) < 30
-		q!
 		call s:Error("Need larger window size! Don't be so mean!")
+		let c=getchar()
+		q!
 		return 
 	endif
 	if a:0==2
